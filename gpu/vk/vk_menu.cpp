@@ -321,6 +321,8 @@ void copy_over(VkCommandBuffer cmd, VkImage dst, Bitmap& b, Upload& u, int x, in
 
 } // namespace
 
+bool user_chose_resolution = false;
+
 void menu_init() {
     static bool done;
     if (done) return;
@@ -342,6 +344,7 @@ void menu_init() {
         }
         fclose(f);
         if (!has_resolution && old_dynres >= 0) opts.resolution = old_dynres ? 0 : 1;
+        user_chose_resolution = has_resolution || old_dynres >= 0;
         // (Game speed is Real time by default now: Per frame played at half speed at 30 fps, the "slow motion" players
         // reported. An options file from before kept the old default whether chosen or not: Real time for it too)
         if (!v2) opts.realtime = 1;
@@ -352,6 +355,20 @@ void menu_init() {
     if (const char* e = getenv("RX_VK_UPSCALE")) opts.upscale = atoi(e);
     if (const char* e = getenv("HOS_REALTIME_STEP")) opts.realtime = atoi(e) != 0;
     if (const char* e = getenv("HOS_DYNRES")) opts.resolution = atoi(e) != 0 ? 0 : 1;
+    if (getenv("HOS_DYNRES") || getenv("HOS_RES_SCALE")) user_chose_resolution = true;
+}
+
+void menu_apply_small_gpu() {
+    if (user_chose_resolution || opts.resolution != 0) return;
+    uint64_t vram = 0;
+    for (uint32_t h = 0; h < dev.memory.memoryHeapCount; h++)
+        if (dev.memory.memoryHeaps[h].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+            vram = std::max(vram, (uint64_t)dev.memory.memoryHeaps[h].size);
+    // 4 GB discrete cards (the RTX A500 is 4). Above 5 GB, Auto is left alone.
+    if (!vram || vram > (5ull << 30)) return;
+    opts.resolution = 4;   // 50%
+    logf("vk: %llu MB of VRAM, resolution starts at 50%% (Insert, Resolution, to raise it)",
+         (unsigned long long)(vram >> 20));
 }
 
 bool menu_is_open() { return open_now.load(std::memory_order_relaxed); }

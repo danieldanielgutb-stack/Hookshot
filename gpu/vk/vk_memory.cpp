@@ -1256,8 +1256,13 @@ uint64_t mirror_budget() {
         uint64_t vram = 0;
         for (uint32_t h = 0; h < dev.memory.memoryHeapCount; h++)
             if (dev.memory.memoryHeaps[h].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) vram = std::max(vram, (uint64_t)dev.memory.memoryHeaps[h].size);
-        // (cards of 6 GB or less only: on 8 GB ones, a 3070 or a 4060, the game's memory read over PCIe instead left the GPU at a few
-        // percent and the frame stuttering)
+        // Cards of 6 GB or less only: on 8 GB ones, a 3070 or a 4060, the game's memory read over
+        // PCIe instead left the GPU at a few percent and the frame stuttering. A 6 GB laptop ran
+        // out when the mirrors took a quarter of the card on top of the textures, so those stay
+        // at an eighth. A 4 GB card at an eighth is only 512 MB: pools that do not fit are read
+        // over PCIe, and with the mirrors off the same path measured 8 fps. A quarter, at most
+        // 1280 MB, still leaves the textures room.
+        if (vram && vram <= (5ull << 30)) return std::min<uint64_t>(vram / 4, 1280ull << 20);
         if (vram && vram <= (6ull << 30) + (512ull << 20)) return vram / 8;
         return vram ? std::min<uint64_t>(vram / 4, 3072ull << 20) : (uint64_t)(3072ull << 20);
     }();

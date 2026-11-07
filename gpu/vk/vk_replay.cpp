@@ -2863,6 +2863,7 @@ uint64_t get_pushed() { return fence(); }
 
 bool replay_start() {
     menu_init();
+    menu_apply_small_gpu();
     if (!memory_init() || !vma_init(instance_proc())) return false;
     VkSemaphoreTypeCreateInfo ti{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
     ti.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;

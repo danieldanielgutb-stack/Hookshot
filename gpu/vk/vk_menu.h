@@ -21,6 +21,9 @@ struct Options {
 extern Options opts;
 
 void menu_init();             // (the options from the file, once)
+/// Cards of about 4 GB: Auto climbs toward the game's full scale and spends the VRAM on new
+/// render targets. If the player has not chosen a resolution, start at 50%.
+void menu_apply_small_gpu();
 void menu_tick();             // (each frame shown: the keys, while the game's window has the focus)
 bool menu_is_open();
 void menu_note_frame(bool game_frame);   // (the frame rates the FPS counter shows)
